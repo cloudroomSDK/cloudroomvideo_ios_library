@@ -46,7 +46,7 @@ CRVSDK_EXPORT
 @interface HTTPReqInfo : NSObject
 
 @property (nonatomic, copy) NSString *filePathName; /**< 本地路径文件名 */
-@property (nonatomic, copy) NSString *httpUrl; /**< URL地址 */
+@property (nonatomic, copy) NSString *dstUrl; /**< URL地址 */
 @property (nonatomic, copy) NSString *fileVersion; /**< 建议使用文件MD5值 */
 @property (nonatomic, assign) BOOL bUploadType; /**< 传输类型 */
 @property (nonatomic, copy) NSString *params; /**< 特殊参数(如边录边传,云屋加密类型) */

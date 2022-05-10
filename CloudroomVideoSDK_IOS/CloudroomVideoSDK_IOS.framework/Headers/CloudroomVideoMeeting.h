@@ -190,6 +190,86 @@ CRVSDK_EXPORT
 
 @end
 
+//WhiteBoardV2Interface.h
+typedef enum
+{
+    WBV2_WHITE,
+    WBV2_DOC
+} WBTYPE_V2;
+
+typedef enum
+{
+    WBIT_IMG,
+    WBIT_PPTANIM,
+    WBIT_PPT
+} WBIMGTYPE_V2;
+
+CRVSDK_EXPORT
+@interface WBDesc_V2 : NSObject
+@property (nonatomic, copy) NSString *              wId;             // 唯一序号
+@property (nonatomic, assign) int                   order;           // 白板序号
+@property (nonatomic, copy) NSString *              owner;           // 白板创建者
+@property (nonatomic, assign) WBTYPE_V2             wType;           // 白板类型（WBTYPE_V2）
+@property (nonatomic, assign) WBIMGTYPE_V2          imgType;         // 文档背景类型（WBIMGTYPE_V2）
+@property (nonatomic, copy) NSString *              name;            // 白板名称
+@property (nonatomic, assign) int                   width;           // 白板宽度
+@property (nonatomic, assign) int                   height;          // 白板高度
+@property (nonatomic, assign) int                   pageCount;       // 总页数
+@property (nonatomic, assign) float                 xPos;            // 视图左上角x位置（0~1.0）
+@property (nonatomic, assign) float                 yPos;            // 视图左上角y位置（0~1.0）
+@property (nonatomic, assign) int                   scale;           // 白板缩放,取值1-200
+@property (nonatomic, copy) NSString *              extInfo;         // 白板自定义扩展信息
+@property (nonatomic, strong) NSMutableDictionary * extProperty;     // 白板结构体扩展预留
+@end
+
+CRVSDK_EXPORT
+@interface WBDescListInfo_V2: NSObject
+@property (nonatomic, strong) NSMutableArray<WBDesc_V2 *> *wbDescList;
+@property (nonatomic, copy) NSString *                     curWB;            //当前白板
+@end
+
+CRVSDK_EXPORT
+@interface WBLoginResponse_V2: NSObject
+@property (nonatomic, strong) WBDescListInfo_V2 *wbDescs;
+@property (nonatomic, copy) NSString * sessionId;
+@end
+
+CRVSDK_EXPORT
+@interface WBHotspot_V2: NSObject
+@property (nonatomic, copy) NSString *    wId;
+@property (nonatomic, copy) NSString *    owner;
+@property (nonatomic, assign) float     xPos;
+@property (nonatomic, assign) float     yPos;
+@end
+
+//图元信息
+CRVSDK_EXPORT
+@interface WBShapeData_V2: NSObject
+@property (nonatomic, copy) NSString *                    sId;        //图元id
+@property (nonatomic, assign) int                         order;      //图元序号
+@property (nonatomic, copy) NSString *                    owner;      //所有者
+@property (nonatomic, assign) int                         left;       //图元位置
+@property (nonatomic, assign) int                         top;
+@property (nonatomic, assign) int                         type;       //图元类型
+@property (nonatomic, copy) NSString *                    attr;       //图元属性json格式
+@property (nonatomic, copy) NSData *                      data;       //图元其它数据（比如手笔数据，轨迹追加即可）
+@end
+
+//图元位置
+CRVSDK_EXPORT
+@interface WBShapePos_V2: NSObject
+@property (nonatomic, copy) NSString *    sId;
+@property (nonatomic, assign) int            left;
+@property (nonatomic, assign) int            top;
+@end
+
+//白板页数据
+CRVSDK_EXPORT
+@interface WBPageData_V2: NSObject
+@property (nonatomic, assign) int                      pageId;
+@property (nonatomic, copy) NSString *                fileId; //图像资源Id
+@property (nonatomic, strong) NSMutableArray<WBShapeData_V2 *> *shapes; //图元列表
+@end
 
 typedef enum
 {
@@ -595,6 +675,10 @@ CRVSDK_EXPORT
  */
 - (void)meetingStopped;
 
+/**
+ 会议掉线（被踢出等非网络因素）
+*/
+- (void)meetingDropped:(CRVIDEOSDK_MEETING_DROPPED_REASON)reason;
 
 - (void)kickoutRslt:(CRVIDEOSDK_ERR_DEF)sdkErr userID:(NSString*)userID;
 
@@ -886,6 +970,12 @@ CRVSDK_EXPORT
 
 -(void)svrMixerOutPutJsonInfo:(NSString*)outputInfo;
 
+// 新云端录制/直播
+- (void)createCloudMixerFailed:(NSString *)mixerID err:(CRVIDEOSDK_ERR_DEF)err;
+- (void)cloudMixerStateChanged:(NSString *)operatorID mixerID:(NSString *)mixerID state:(MIXER_STATE)state exParam:(NSString *)exParam;
+- (void)cloudMixerInfoChanged:(NSString *)mixerID;
+- (void)cloudMixerOutputInfoChanged:(NSString *)mixerID jsonStr:(NSString *)jsonStr;
+
 
 /**********影音**********/
 
@@ -895,6 +985,11 @@ CRVSDK_EXPORT
  */
 - (void)notifyMediaStart:(NSString *)userid;
 
+/**
+ 开启影音共享功能失败
+ @param err 错误码
+ */
+- (void)startPlayMediaFail:(CRVIDEOSDK_ERR_DEF)err;
 
 /**
  影音暂停播放回调
@@ -1323,6 +1418,20 @@ CRVSDK_EXPORT
 
 -(void) rmPicResource:(NSString *)resID;
 
+/**
+ 开始获取语音pcm数据
+ @param aSide 声道类型 0:麦克风，1:扬声器
+ @param getType 获取方式 0:回调方式，1:保存为文件
+ @param param 当getType=0 表示回调方式，jsonParam可配置回调的数据大小(320-32000)，如: {"EachSize":320};当getType=1 表示保存为文件，jsonParam可配置文件名，如: { "FileName" ： "e:\test.pcm" }
+ */
+- (BOOL)startGetAudioPCM:(int)aSide getType:(int)getType param:(NSString *)param;
+
+/**
+ 停止获取语音pcm数据
+ @param aSide 声道类型 0:麦克风，1:扬声器
+ */
+- (void)stopGetAudioPCM:(int)aSide;
+
 #pragma mark ----------------------------------------------- 视频接口
 /**
  设置视频配置信息
@@ -1388,10 +1497,10 @@ CRVSDK_EXPORT
 
 /**
  设置默认摄像头
- @param userId 用户ID
+ @param userID 用户ID
  @param videoID 摄像头ID
  */
-- (void)setDefaultVideo:(NSString *)userId videoID:(short)videoID;
+- (void)setDefaultVideo:(NSString *)userID videoID:(short)videoID;
 
 
 /**
@@ -1474,10 +1583,8 @@ CRVSDK_EXPORT
 -(void) setCustomizeScreenImg:(NSData*)yuvDat datLenght:(int)datLenght width:(int)width height:(int)height orientation:(YWOrientation)orientation;
 
 #pragma mark ----------------------------------------------- IM接口
-- (NSString *)sendIMmsg:(NSString *)text toUserID:(NSString *)toUserID;
-- (NSString *)sendIMmsg:(NSString *)text toUserID:(NSString *)toUserID cookie:(NSString *)cookie;
 
--(void) sendMeetingCustomMsg:(NSString *)text cookie:(NSString *)cookie;
+- (void)sendMeetingCustomMsg:(NSString *)text cookie:(NSString *)cookie;
 
 #pragma mark ----------------------------------------------- 录制接口
 // added by king 20170801
@@ -1545,6 +1652,13 @@ CRVSDK_EXPORT
 
 -(CRVIDEOSDK_ERR_DEF)startSvrMixerJson:(NSString*)cfgs contents:(NSString*)contents outputs:(NSString*)outputs;
 -(CRVIDEOSDK_ERR_DEF)updateSvrMixerContentJson:(NSString*)contents;
+
+//新云端录制接口
+- (NSString *)createCloudMixer:(NSString *)cfg;
+- (CRVIDEOSDK_ERR_DEF)updateCloudMixerContent:(NSString *)mixerID cfg:(NSString *)cfg;
+- (void)destroyCloudMixer:(NSString *)mixerID;
+- (NSString *)getCloudMixerInfo:(NSString *)mixerID;
+- (NSString *)getAllCloudMixerInfo;
 
 /**********录制文件管理**********/
 

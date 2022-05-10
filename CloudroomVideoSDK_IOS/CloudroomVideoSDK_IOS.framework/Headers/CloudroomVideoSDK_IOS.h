@@ -23,4 +23,4 @@ FOUNDATION_EXPORT const unsigned char CloudroomVideoSDK_IOSVersionString[];
 #import <CloudroomVideoSDK_IOS/CloudroomQueue.h>
 #import <CloudroomVideoSDK_IOS/CloudroomHttpFileMgr.h>
 #import <CloudroomVideoSDK_IOS/CloudroomCommonType.h>
-#import <CloudroomVideoSDK_IOS/CloudroomScreenShareHelp.h>
+

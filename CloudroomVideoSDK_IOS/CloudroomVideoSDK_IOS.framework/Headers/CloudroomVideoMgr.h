@@ -288,7 +288,7 @@ CRVSDK_EXPORT
 
 -(void)rejectInviteFail:(NSString *)inviteID sdkErr:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)notifyInviteIn:(NSString *)inviteID  inviterUsrID:(NSString*)NSString usrExtDat:(NSString *)usrExtDat;
+-(void)notifyInviteIn:(NSString *)inviteID  inviterUsrID:(NSString*)inviterUsrID usrExtDat:(NSString *)usrExtDat;
 
 -(void)notifyInviteAccepted:(NSString *)inviteID usrExtDat:(NSString *)usrExtDat;
 
@@ -422,7 +422,7 @@ CRVSDK_EXPORT
  @param meetSubject 会议主题
  @param createPswd 会议密码
  */
-- (void)createMeeting:(NSString *)meetSubject createPswd:(BOOL)createPswd;
+- (void)createMeeting:(NSString *)meetSubject createPswd:(BOOL)createPswd DEPRECATED_MSG_ATTRIBUTE("use createMeeting: instead");
 
 
 /**
@@ -431,7 +431,18 @@ CRVSDK_EXPORT
  @param createPswd 会议密码
  @param cookie 用户自定义数据
  */
-- (void)createMeeting:(NSString *)meetSubject createPswd:(BOOL)createPswd cookie:(NSString *)cookie;
+- (void)createMeeting:(NSString *)meetSubject createPswd:(BOOL)createPswd cookie:(NSString *)cookie DEPRECATED_MSG_ATTRIBUTE("use createMeeting: instead");
+
+/**
+ 创建会议
+*/
+- (void)createMeeting;
+
+/**
+ 创建会议
+ @param cookie 用户自定义数据
+*/
+- (void)createMeeting:(NSString *)cookie;
 
 /**
  销毁房间

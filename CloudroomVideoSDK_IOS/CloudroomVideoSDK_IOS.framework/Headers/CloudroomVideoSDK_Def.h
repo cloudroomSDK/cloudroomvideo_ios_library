@@ -178,10 +178,8 @@ typedef enum
 */
 typedef enum
 {
-    CRVIDEOSDK_DROPPED_TIMEOUT = 0,        //网络通信超时
-    CRVIDEOSDK_DROPPED_KICKOUT,            //被他人请出会议
-    CRVIDEOSDK_DROPPED_BALANCELESS,        //余额不足
-    CRVIDEOSDK_DROPPED_TOKENINVALID        //Token鉴权方式下，token无效或过期
+    CRVIDEOSDK_DROPPED_KICKOUT = 1,            //被他人请出会议
+    CRVIDEOSDK_DROPPED_BALANCELESS             //余额不足
 }CRVIDEOSDK_MEETING_DROPPED_REASON;
 
 /*
