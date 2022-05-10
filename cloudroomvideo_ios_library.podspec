@@ -16,7 +16,7 @@ Pod::Spec.new do |spec|
   #
 
   spec.name         = "cloudroomvideo_ios_library"
-  spec.version      = "0.0.2"
+  spec.version      = "0.0.4"
   spec.summary      = "Native SDK for flutter iOS."
 
   # This description is used to generate tags and improve search results.
