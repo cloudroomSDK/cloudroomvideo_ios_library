@@ -44,6 +44,52 @@ CRVSDK_EXPORT
 
 @end
 
+/*
+音频订阅模式
+*/
+typedef enum {
+    ASM_MIXED,            //整个会议的混音流
+    ASM_SEPARATE,        //每个人的独立流
+} ASUBSCRIB_MODE;
+
+/*
+音频订阅名单类型
+*/
+typedef enum {
+    ASLT_INCLUDE,        //白名单
+    ASLT_EXCLUDE,        //黑名单
+} ASUBSCRIB_LISTTYPE;
+
+/*
+音频格式
+*/
+typedef enum {
+    AFMT_INVALID = -1,    //无效格式
+    AFMT_PCM16BIT = 0,    //pcm 16bit
+    AFMT_PCM8BIT          //pcm 8bit
+} AUDIO_FORMAT;
+
+/*
+声道布局
+*/
+typedef enum {
+    ACHL_MONO = 1,        //单声道
+    ACHL_STEREO = 3       //左右双声道
+} AUDIO_CHLAYOUT;
+
+/* 音频数据信息 */
+CRVSDK_EXPORT
+@interface AudioFrame : NSObject
+{
+    @public uint8_t* data; //音频数据
+}
+@property (nonatomic, assign) AUDIO_FORMAT format; //音频格式
+@property (nonatomic, assign) int sampleRate;  //采样率
+@property (nonatomic, assign) AUDIO_CHLAYOUT chLayout; //声道布局
+@property (nonatomic, assign) NSTimeInterval timestamp; //时间戳（ms)
+@property (nonatomic, assign) int datLen; //音频数据长度
+@end
+
 /* 麦克风状态 */
 
 typedef enum
@@ -66,9 +112,13 @@ CRVSDK_EXPORT
 CRVSDK_EXPORT
 @interface UsrVideoInfo : UsrVideoId
 
-@property (nonatomic, copy) NSString *videoName; // 设备名
-@property (nonatomic, copy) NSString *videoDevPath; // 设备路径
-
+@property (nonatomic, copy) NSString *devID; // 设备id
+@property (nonatomic, copy) NSString *videoName; // 设备名称
+@property (nonatomic, assign) BOOL isDisabled;        //是否被禁用
+@property (nonatomic, assign) BOOL isIPCamera;        //是否为网络摄像头
+@property (nonatomic, assign) BOOL isCustomCamera;    //是否为自定义摄像头
+@property (nonatomic, assign) BOOL isScreenCamera;    //是否为桌面摄像头
+@property (nonatomic, assign) BOOL isFrontCam;        //是否为前置摄像头
 @end
 
 
@@ -92,10 +142,20 @@ typedef enum
 
 typedef enum
 {
-    VFMT_UNKNOW = -1,    //未知格式
-    VFMT_YUV420P = 0,
-    VFMT_ARGB32,        //ARGB format (0xAARRGGBB).
-    VFMT_RGBA32,
+    VFMT_UNKNOW  = -1,   // 未知格式
+    VFMT_YUV420P = 0,    // yuv420p, 3个平面数据(ColorSapce:BT601, ColorRang:limited range)
+    VFMT_ARGB32,         // rgb32, 1个平面数据，0xAARRGGBB
+    VFMT_RGBA32,         // rgb32, 1个平面数据，0xRRGGBBAA
+    VFMT_H264,           // h264裸数据，1个平面数据
+    VFMT_OESTEXTURE,     // oes纹理
+    VFMT_NV21    = 5,    // nv21, 2个平面数据(ColorSapce:BT601, ColorRang:limited range)
+    VFMT_NV12    = 6,    // nv12, 2个平面数据(ColorSapce:BT601, ColorRang:limited range)
+    VFMT_0RGB    = 7,    // rgb32, 1个平面数据，0xXXRRGGBB(忽略alpha通道)
+    VFMT_RGB0,           // rgb32, 1个平面数据，0xRRGGBBXX(忽略alpha通道)
+    VFMT_BGR0,           // rgb32, 1个平面数据，0xBBGGRRXX(忽略alpha通道)
+    VFMT_0BGR    = 10,   // rgb32, 1个平面数据，0xxxBBGGRR(忽略alpha通道)
+    VFMT_BGRA,           // rgb32, 1个平面数据，0xBBGGRRAA
+    VFMT_ABGR,           // rgb32, 1个平面数据，0xAABBGGRR
 } VIDEO_FORMAT;
 
 // added by king 20170906
@@ -183,7 +243,7 @@ CRVSDK_EXPORT
 CRVSDK_EXPORT
 @interface MarkData : NSObject
 
-@property (nonatomic, assign) short termid; // ID
+@property (nonatomic, copy) NSString* userid; // ID
 @property (nonatomic, copy) NSString* markid; // SN
 @property (nonatomic, assign) int type; // 画笔颜色
 @property (nonatomic, copy) NSArray<NSNumber *> *mousePosSeq;
@@ -204,14 +264,17 @@ typedef enum
     WBIT_PPT
 } WBIMGTYPE_V2;
 
+typedef  enum {
+    CLPageModeFullPage, // 单页模式，存在多页时翻页时整页翻
+    CLPageModeMutilPage,  // 连页模式，存在多页时翻页时滑动翻
+}CLPageMode;
+
 CRVSDK_EXPORT
-@interface WBDesc_V2 : NSObject
-@property (nonatomic, copy) NSString *              wId;             // 唯一序号
-@property (nonatomic, assign) int                   order;           // 白板序号
+@interface BoardInfo : NSObject
+@property (nonatomic, copy) NSString *              boardID;         // 唯一序号
 @property (nonatomic, copy) NSString *              owner;           // 白板创建者
 @property (nonatomic, assign) WBTYPE_V2             wType;           // 白板类型（WBTYPE_V2）
 @property (nonatomic, assign) WBIMGTYPE_V2          imgType;         // 文档背景类型（WBIMGTYPE_V2）
-@property (nonatomic, copy) NSString *              name;            // 白板名称
 @property (nonatomic, assign) int                   width;           // 白板宽度
 @property (nonatomic, assign) int                   height;          // 白板高度
 @property (nonatomic, assign) int                   pageCount;       // 总页数
@@ -220,55 +283,6 @@ CRVSDK_EXPORT
 @property (nonatomic, assign) int                   scale;           // 白板缩放,取值1-200
 @property (nonatomic, copy) NSString *              extInfo;         // 白板自定义扩展信息
 @property (nonatomic, strong) NSMutableDictionary * extProperty;     // 白板结构体扩展预留
-@end
-
-CRVSDK_EXPORT
-@interface WBDescListInfo_V2: NSObject
-@property (nonatomic, strong) NSMutableArray<WBDesc_V2 *> *wbDescList;
-@property (nonatomic, copy) NSString *                     curWB;            //当前白板
-@end
-
-CRVSDK_EXPORT
-@interface WBLoginResponse_V2: NSObject
-@property (nonatomic, strong) WBDescListInfo_V2 *wbDescs;
-@property (nonatomic, copy) NSString * sessionId;
-@end
-
-CRVSDK_EXPORT
-@interface WBHotspot_V2: NSObject
-@property (nonatomic, copy) NSString *    wId;
-@property (nonatomic, copy) NSString *    owner;
-@property (nonatomic, assign) float     xPos;
-@property (nonatomic, assign) float     yPos;
-@end
-
-//图元信息
-CRVSDK_EXPORT
-@interface WBShapeData_V2: NSObject
-@property (nonatomic, copy) NSString *                    sId;        //图元id
-@property (nonatomic, assign) int                         order;      //图元序号
-@property (nonatomic, copy) NSString *                    owner;      //所有者
-@property (nonatomic, assign) int                         left;       //图元位置
-@property (nonatomic, assign) int                         top;
-@property (nonatomic, assign) int                         type;       //图元类型
-@property (nonatomic, copy) NSString *                    attr;       //图元属性json格式
-@property (nonatomic, copy) NSData *                      data;       //图元其它数据（比如手笔数据，轨迹追加即可）
-@end
-
-//图元位置
-CRVSDK_EXPORT
-@interface WBShapePos_V2: NSObject
-@property (nonatomic, copy) NSString *    sId;
-@property (nonatomic, assign) int            left;
-@property (nonatomic, assign) int            top;
-@end
-
-//白板页数据
-CRVSDK_EXPORT
-@interface WBPageData_V2: NSObject
-@property (nonatomic, assign) int                      pageId;
-@property (nonatomic, copy) NSString *                fileId; //图像资源Id
-@property (nonatomic, strong) NSMutableArray<WBShapeData_V2 *> *shapes; //图元列表
 @end
 
 typedef enum
@@ -292,12 +306,22 @@ typedef enum
 /**********录制**********/
 // added by king 20170801
 typedef NS_ENUM(NSInteger, REC_CONTENT_TYPE) {
-    RECVTP_VIDEO = 0, // 摄像头,_itemDat中应有:camid=MeetingSDK::CamID
+    RECVTP_VIDEO = 0, // 摄像头,_itemDat中应有:camid=MeetingCore::CamID
     RECVTP_PIC, // 图片,_itemDat中应有:resourceid=xxx
     RECVTP_SCREEN, // 整个屏幕,_itemDat中可以有:screenid=-1;pid=x;area=QRect
     RECVTP_MEDIA, // 影音共享
     RECVTP_TIMESTAMP, // 时间戳水印,_itemDat中应有:resourceid=xxx
     RECVTP_REMOTE_SCREEN,    //远端屏幕
+    RECVTP_AUDIO = 9, //纯声音录制，_itemDat中应有: termId=123;
+    
+    //文字水印，该类型不会应用width、height参数，_itemDat中应有:
+    //资源id：resourceid:"xxx"，如果存在该参数，则需要按照图片方式处理
+    //文本内容：text:"xxx"，支持%timestamp%特殊参数，代表时间戳
+    //文本颜色：color:，#FFFFFF，格式：#RRGGBB[AA]
+    //背景色：background:#0000007D，格式：#RRGGBB[AA]
+    //字体大小：font-size:18
+    //边距：text-margin:5
+    RECVTP_TEXT = 10,
 };
 
 
@@ -345,6 +369,25 @@ CRVSDK_EXPORT
 
 @end
 
+//编码类型
+typedef NS_ENUM(NSUInteger, CRCODEC_ID) {
+    CRVSDK_CODECID_NONE = 0,
+    CRVSDK_CODECID_H264 = 27,
+    CRVSDK_CODECID_VP8 = 139,
+    CRVSDK_CODECID_H265 = 173,
+};
+
+CRVSDK_EXPORT
+@interface StreamInfo : NSObject
+
+@property (nonatomic, assign) short w;
+@property (nonatomic, assign) short h;
+@property (nonatomic, assign) float fps;
+@property (nonatomic, assign) int bps; //单位：bit/秒
+@property (nonatomic, assign) CRCODEC_ID codecID;
+
+@end
+
 /* 媒体数据信息 */
 CRVSDK_EXPORT
 @interface MediaDataFrame : NSObject
@@ -353,7 +396,7 @@ CRVSDK_EXPORT
 }
 
 @property (nonatomic, assign) int datLength; // 图像大小
-@property (nonatomic, assign) int fmt; // 格式
+@property (nonatomic, assign) VIDEO_FORMAT fmt; // 格式
 @property (nonatomic, assign) int w; // 宽
 @property (nonatomic, assign) int h; // 高
 @property (nonatomic, assign) int64_t ms; // PTS
@@ -429,6 +472,33 @@ CRVSDK_EXPORT
 /* 整个屏幕 */
 CRVSDK_EXPORT
 @interface RecScreenContentItem : RecContentItem
+
+@end
+
+/* 纯声音 */
+CRVSDK_EXPORT
+@interface RecAudioContentItem : RecContentItem
+- (instancetype)initWithTermId:(int)termId;
+@end
+
+/* 文字水印 */
+CRVSDK_EXPORT
+@interface RecTextContentItem : RecContentItem
+
+/// 录制文字水印
+/// @param itemRt 位置，宽高将忽略
+/// @param text 必须包含的文本内容
+- (instancetype)initWithRect:(CGRect)itemRt text:(NSString *)text;
+
+/// 录制文字水印
+/// @param itemRt 位置，宽高将忽略
+/// @param resID 具有唯一属性的字符串id，通过setPicResource将图片存储到sdk内供混图模块使用（可选）
+/// @param text 必须包含的文本内容
+/// @param textColor 文本颜色，格式：#RRGGBB[AA]， 默认#FFFFFF
+/// @param backgroundColor 背景色，格式：#RRGGBB[AA]， 默认#0000007D
+/// @param fontSize 字体大小，默认18
+/// @param margin 边距，默认5
+- (instancetype)initWithRect:(CGRect)itemRt resID:(NSString *)resID text:(NSString *)text textColor:(NSString *)textColor backgroundColor:(NSString *)backgroundColor fontSize:(int)fontSize margin:(int)margin;
 
 @end
 
@@ -509,19 +579,35 @@ CRVSDK_EXPORT
 @property (nonatomic, strong) NSMutableArray <OutputCfg *> *outputs;
 @end
 
+typedef NS_ENUM(NSInteger, CLScaleType) {
+    CLScaleTypeAspectFit = 0,  // 等比缩放留空居中显示
+    CLScaleTypeAspectFill = 1,       // 等比缩放裁剪铺满显示
+    CLScaleTypeScaleToFill = 2       // 不等比缩放铺满显示（可能导致图像拉伸）
+};
+
+typedef NS_ENUM(NSUInteger, MirrorType) {
+    MIRROR_AUTO, // 本地前置摄像头自动镜像
+    MIRROR_OFF,  // 不镜像
+    MIRROR_ON,   // 镜像
+};
+
 /* added by king 20180312 */
 CRVSDK_EXPORT
 @interface CLBaseView : UIView
 
-@property (nonatomic, assign) BOOL keepAspectRatio;
-/**
- 绘制视频size
- */
--(CGSize)getVideoSize;
+@property (nonatomic, assign) CLScaleType scaleType; // 显示模式
+@property (nonatomic, assign) MirrorType mirrorType; // 镜像模式
+
+
+- (UIImage *)getShowPic;
+- (int)getPicWidth;
+- (int)getPicHeight;
+
 /**
  清除画面
  */
 - (void)clearFrame;
+
 @end
 
 CRVSDK_EXPORT
@@ -531,9 +617,10 @@ CRVSDK_EXPORT
 @property (nonatomic, assign) int camShowNO;
 @property (nonatomic, assign) CGSize videoSize;
 
--(UIImage*)getVideoImage;
--(void)setUsrVideoId:(UsrVideoId *)usrVideoId;
--(void)setUsrVideoId:(UsrVideoId *)usrVideoId qualityLv:(int)qualityLv;
+- (UIImage*)getVideoImage;
+- (void)setUsrVideoId:(UsrVideoId *)usrVideoId;
+- (void)setUsrVideoId:(UsrVideoId *)usrVideoId qualityLv:(int)qualityLv;
+
 @end
 
 CRVSDK_EXPORT
@@ -549,12 +636,12 @@ CRVSDK_EXPORT
 CRVSDK_EXPORT
 @interface CLShareView : UIView
 @property (nonatomic, assign) BOOL isSharer;
--(void)clearFrame;
+- (void)clearFrame;
 - (void)setShareSrcSize:(CGSize)shareSrcSize;
--(void)updateScreenView;
--(void)setDelTime:(double)time;
--(void)setMarkColor:(UIColor*)color;
--(void)setMarkLineW:(int)lineW;
+- (void)updateScreenView;
+- (void)setDelTime:(double)time;
+- (void)setMarkColor:(UIColor*)color;
+- (void)setMarkLineW:(int)lineW;
 @end
 
 /**< 画笔形状 */
@@ -611,6 +698,26 @@ typedef NS_ENUM(NSInteger, MainPageType)
 };//视频墙、共享、白板
 
 /* 白板 (king 20180716) */
+typedef NS_ENUM(NSInteger, CLShapeType)
+{
+    CLSHAPE_NULL,
+    CLSHAPE_PEN,            //画笔
+    CLSHAPE_LINE,           //直线
+    CLSHAPE_RECT,           //矩形
+    CLSHAPE_ELLIPSE,        //圆
+    CLSHAPE_ARROW,          //箭头
+    CLSHAPE_TEXT,           //文本
+    CLSHAPE_IMAGE,          //图片
+    CLSHAPE_CHOOSE = 1000,  //选择
+    CLSHAPE_ERASER,         //橡皮擦
+    CLSHAPE_SCROLL,         //翻页或移动画布
+};
+typedef NS_ENUM(NSInteger, CLBoardViewMarkExceptionType)
+{
+    CLMarkExceptionTypeUnknown,
+    CLMarkExceptionTypeSinglePageLimit,   // 单页标注已达最大无法再标注通知
+    CLMarkExceptionTypeSingleLineLimt,    // 单笔标注超长截断通知
+};
 CRVSDK_EXPORT
 @interface SubPage : NSObject
 
@@ -636,7 +743,7 @@ CRVSDK_EXPORT
 CRVSDK_EXPORT
 @interface NetDiskDocDir : NSObject
 @property (nonatomic, copy) NSString *name;
-@property (nonatomic, strong) NSMutableArray <FileInfo *>* files;
+@property (nonatomic, strong) NSMutableArray <CRFileInfo *>* files;
 @property (nonatomic, strong) NSMutableArray <NetDiskDocDir *>* dirs;
 @end
 
@@ -647,8 +754,129 @@ CRVSDK_EXPORT
 @property (nonatomic, assign) int height;
 @property (nonatomic, strong) NSMutableArray <NSString *>* files;
 @end
+CRVSDK_EXPORT
+@interface BoardViewToolProperty : NSObject
+@property (nonatomic, assign) CGFloat lineWidth;  // 线宽
+@property (nonatomic, copy) UIColor *strokeStyle;  // 画笔及文本颜色
+@property (nonatomic, copy) UIFont *font;  // 文本属性
+@property (nonatomic, assign) NSTextAlignment textAlign;  // 文本对齐
+@end
+@class CLBoardView;
+#pragma mark - ----------------------------------------------- 白板View
+@protocol CLBoardViewCallBack <NSObject>
+@optional
+#pragma mark - ----------------------------------------------- 白板View回调
+- (void)notifyBoardCurPageChanged:(CLBoardView *)boardView curPage:(NSInteger)curPage operatorID:(NSString *)operatorID;
+- (void)notifyRedoEnableChanged:(CLBoardView *)boardView bEnable:(BOOL)bEnable;
+- (void)notifyUndoEnableChanged:(CLBoardView *)boardView bEnable:(BOOL)bEnable;
+- (void)notifyViewScaleChanged:(NSString *)boardID boardView:(CLBoardView *)boardView scale:(int)scale;
+- (void)notifyMarkException:(CLBoardView *)boardView exType:(CLBoardViewMarkExceptionType)exType;
+@end
 
+CRVSDK_EXPORT
+@interface CLBoardViewAttr : NSObject
+@property (nonatomic, assign) BOOL readOnly; // 不可标注
+@property (nonatomic, assign) BOOL asyncPage; // 是否同步页面
+@property (nonatomic, assign) BOOL followPage; // 是否跟随页面(滑动翻页)
+@property (nonatomic, assign) BOOL asyncScale; // 是否同步缩放
+@property (nonatomic, assign) BOOL followScale; // 是否跟随缩放
+@end
+
+CRVSDK_EXPORT
+@interface CLBoardViewToolAttr : NSObject
+@property (nonatomic, assign) int lineWidth; // 画笔粗细
+@property (nonatomic, assign) int color; // 画笔颜色
+@end
+
+NS_ASSUME_NONNULL_BEGIN
+CRVSDK_EXPORT
+@interface CLBoardView : UIView
+@property (nonatomic, readonly, strong) UITableView *tableView;
+
+// 设置内容页背景色，默认白色
+- (void)setPageBackgroundColor:(UIColor *)pageBackgroundColor;
+
+// 注册内部事件的监听者
+- (void)registerWhiteBoardCallback;
+// 清理内部事件监听者
+- (void)removeWhiteBoardCallBack;
+
+- (void)setBoardViewCallback:(id<CLBoardViewCallBack>)callback;
+
+// 配置白板View
+- (void)setBoardID:(NSString *__nullable)boardID boardViewAttr:(CLBoardViewAttr *__nullable)boardViewAttr;
+
+// 配置白板文本图元输入控件的父视图，建议使用当前控制器的View方便内部控制textView效果
+- (void)configBoardTextViewContainer:(UIView *)textViewContainer;
+
+// 取消内部输入控件的第一响应
+- (void)resignTextViewFirstResponder;
+
+/// 获取白板View属性
+- (CLBoardViewAttr *)getBoardViewAttr;
+/// 更新白板View属性
+/// @param boardViewAttr 白板View属性
+- (void)setBoardViewAttr:(CLBoardViewAttr *)boardViewAttr;
+/// 设置View的当前页
+/// @param pageNum 页数
+- (void)setBoardViewCurPage:(NSInteger)pageNum;
+
+/// 获取View的当前页
+- (NSInteger)getBoardViewCurPage;
+
+/// 设置View的工具类型
+/// @param type 工具类型
+- (void)setBoardViewToolType:(CLShapeType)type;
+
+/// 获取View的工具类型
+- (CLShapeType)getBoardViewToolType;
+
+/// 设置View的工具属性
+/// @param property 工具属性
+- (void)setBoardViewToolAttr:(CLBoardViewToolAttr *)property;
+
+/// 获取View的工具属性
+- (CLBoardViewToolAttr *)getBoardViewToolAttr;
+
+/// 清空当页标注
+- (void)clearCurPage;
+
+/// 清空整个View的标注
+- (void)clearAllPage;
+
+/// 获取是否可以redo
+- (BOOL)getRedoEnableState;
+
+/// 获取是否可以undo
+- (BOOL)getUndoEnableState;
+
+/// 撤销上一步操作
+- (void)undo;
+
+/// 恢复上一步操作
+- (void)redo;
+
+/// 设置View的缩放区间（0.2～5）
+/// - Parameters:
+///   - min: 最小缩放系数
+///   - max: 最大缩放系数
+- (void)setViewScaleRange:(CGFloat)min max:(CGFloat)max;
+
+/// 获取View的最小缩放系数
+- (CGFloat)getViewMinScale;
+
+/// 获取View的最大缩放系数
+- (CGFloat)getViewMaxScale;
+
+/// 获取View的缩放系数
+- (CGFloat)getViewScale;
+
+@end
+NS_ASSUME_NONNULL_END
 #pragma mark ----------------------------------------------- 视频会议回调接口
+
+NS_ASSUME_NONNULL_BEGIN
+
 @protocol CloudroomVideoMeetingCallBack <NSObject>
 
 @optional
@@ -685,12 +913,12 @@ CRVSDK_EXPORT
 /**
  会议状态改变
  */
--(void)notifyRoomStateChanged:(bool)lock;
+- (void)notifyRoomStateChanged:(bool)lock;
 
 /**
  会议锁门失败
  */
--(void)notifyLockRoomFail:(bool)lock;
+- (void)notifyLockRoomFail:(bool)lock;
 
 /**
  成员进入会议
@@ -726,6 +954,7 @@ CRVSDK_EXPORT
 - (void)micEnergyUpdate:(NSString *)userID oldLevel:(int)oldLevel newLevel:(int)newLevel;
 
 
+
 /**
  本地音频设备变化回调
  */
@@ -735,16 +964,21 @@ CRVSDK_EXPORT
 /**
  通知语音PCM数据
  
- @param aSiden 声道类型
+ @param aSide 声道类型
  @param audioDat  PCM数据
  */
--(void)audioPCMData:(int)aSiden audioDat:(NSData*)audioDat;
+- (void)audioPCMData:(int)aSide audioDat:(NSData*)audioDat;
 
+//通知被设置变声(type=0即不变声)
+- (void)notifySetVoiceChange:(NSString *)userID type:(int)type oprUserID:(NSString *)oprUserID;
+
+//通知环回测试状态变化
+- (void)notifyEchoTestState:(bool)bTesting;
 
 /**
  全体静音通知
  */
--(void)notifyAllAudioClose:(NSString*)userID;
+- (void)notifyAllAudioClose:(NSString *)userID;
 /**
  音频设备状态变化
  @param userID 用户ID
@@ -803,39 +1037,39 @@ CRVSDK_EXPORT
  
  @param sdkErr sdkErr
  */
--(void)startScreenShareRslt:(CRVIDEOSDK_ERR_DEF)sdkErr;
+- (void)startScreenShareRslt:(CRVIDEOSDK_ERR_DEF)sdkErr;
 
 /**
  主动停止了屏幕共享
  
  @param sdkErr sdkErr
  */
--(void)stopScreenShareRslt:(CRVIDEOSDK_ERR_DEF)sdkErr;
+- (void)stopScreenShareRslt:(CRVIDEOSDK_ERR_DEF)sdkErr;
 /**
  通知他人屏幕共享开始回调
  */
-- (void)notifyScreenShareStarted;
+- (void)notifyScreenShareStarted:(NSString *)shareId;
 
 /**
  请求屏幕共享通知
  */
--(void)notifyRequestShare:(NSString*)shareId requestId:(NSString*)requestId param:(NSString*)param;
+- (void)notifyRequestShare:(NSString*)shareId requestId:(NSString*)requestId param:(NSString*)param;
 
 /**
  取消屏幕共享通知
  */
--(void)notifyCancelShareRequestion:(NSString*)shareId requestId:(NSString*)requestId;
+- (void)notifyCancelShareRequestion:(NSString*)shareId requestId:(NSString*)requestId;
 
 /**
  拒绝屏幕共享请求通知
  */
--(void)notifyRejectShareRequestion:(NSString*)shareId requestId:(NSString*)requestId param:(NSString*)param;
+- (void)notifyRejectShareRequestion:(NSString*)shareId requestId:(NSString*)requestId param:(NSString*)param;
 
 
 /**
  通知他人屏幕共享停止回调
  */
-- (void)notifyScreenShareStopped;
+- (void)notifyScreenShareStopped:(NSString *)oprUserID;
 
 
 /**
@@ -850,37 +1084,37 @@ CRVSDK_EXPORT
 /**
  通知该自定义抓屏了
  */
--(void)notifyCatchScreen;
+- (void)notifyCatchScreen;
 
 /**
  赋予控制权限通知
  */
--(void)notifyGiveCtrlRight:(NSString*)operId targetId:(NSString*)targetId;
+- (void)notifyGiveCtrlRight:(NSString*)operId targetId:(NSString*)targetId;
 
 
 /**
  收回控制权限通知
  */
--(void)notifyReleaseCtrlRight:(NSString*)operId targetId:(NSString*)targetId;
+- (void)notifyReleaseCtrlRight:(NSString*)operId targetId:(NSString*)targetId;
 
 
 /**
  屏幕共享尺寸变化
  */
--(void)notifyShareRectChanged:(CGRect)rect;
+- (void)notifyShareRectChanged:(CGRect)rect;
 
--(void)notifyScreenShareCtrlMouseMsg:(int)eventType xPos:(int)xPos yPos:(int)yPos mouseData:(int)mouseData;
+- (void)notifyScreenShareCtrlMouseMsg:(int)eventType xPos:(int)xPos yPos:(int)yPos mouseData:(int)mouseData;
 
--(void)notifyScreenShareCtrlKeyMsg:(int)keyCode bExtendedKey:(BOOL)bExtendedKey bKeyDonw:(BOOL)bKeyDonw;
+- (void)notifyScreenShareCtrlKeyMsg:(int)keyCode bExtendedKey:(BOOL)bExtendedKey bKeyDonw:(BOOL)bKeyDonw;
 /**********IM**********/
 // IM消息发送结果
 - (void)sendIMmsgRlst:(NSString *)taskID sdkErr:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 // 通知收到文本消息
 - (void)notifyIMmsg:(NSString *)romUserID text:(NSString *)text sendTime:(int)sendTime;
 
--(void)sendCustomMeetingMsgRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)sendCustomMeetingMsgRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)notifyCustomMeetingMsg:(NSString *)fromUserID jsonDat:(NSString *)jsonDat;
+- (void)notifyCustomMeetingMsg:(NSString *)fromUserID jsonDat:(NSString *)jsonDat;
 
 /**********录制**********/
 // added by king 20170802
@@ -898,7 +1132,7 @@ CRVSDK_EXPORT
  @param nameUrl 录像名称或直播Url
  @param outputInfo 输出信息
  */
--(void)locMixerOutputInfo:(NSString*)mixerID nameUrl:(NSString*)nameUrl outputInfo:(OutputInfo*)outputInfo;
+- (void)locMixerOutputInfo:(NSString*)mixerID nameUrl:(NSString*)nameUrl outputInfo:(OutputInfo*)outputInfo;
 
 /**
  录制过程状态改变回调
@@ -960,15 +1194,15 @@ CRVSDK_EXPORT
 /**
  云端录制、云端直播内容变化通知
  */
--(void)svrMixerCfgChanged;
+- (void)svrMixerCfgChanged;
 
 /**
  云端录制文件、云端直播信息变化通知
  @param outputInfo 录制文件、直播信息通知
  */
--(void)svrMixerOutPutInfo:(OutputInfo*)outputInfo;
+- (void)svrMixerOutPutInfo:(OutputInfo*)outputInfo;
 
--(void)svrMixerOutPutJsonInfo:(NSString*)outputInfo;
+- (void)svrMixerOutPutJsonInfo:(NSString*)outputInfo;
 
 // 新云端录制/直播
 - (void)createCloudMixerFailed:(NSString *)mixerID err:(CRVIDEOSDK_ERR_DEF)err;
@@ -1030,33 +1264,19 @@ CRVSDK_EXPORT
  */
 - (void)notifyPlayPosSetted:(int)setPTS;
 
-
-/**********UI回调同步**********/
-// added by king 20170803
-/**
- 视频墙分屏模式回调
- @param wallMode 分屏模式(0:互看 1:1分屏 2:2分屏 3:4分屏 4:5分屏 5:6分屏 6:9分屏 7:13分屏 8:16分屏)
- */
-- (void)notifyVideoWallMode:(int)wallMode;
-
-
 // added by king 20170810
 
 /**
  开始屏幕共享时, 标注操作结果
  @param sdkErr sdkErr
  */
--(void)startScreenMarkRslt:(CRVIDEOSDK_ERR_DEF)sdkErr;
+- (void)startScreenMarkRslt:(CRVIDEOSDK_ERR_DEF)sdkErr;
 
 /**
  结束屏幕共享时, 标注操作结果
  @param sdkErr sdkErr
  */
--(void)stopScreenMarkRslt:(CRVIDEOSDK_ERR_DEF)sdkErr;
-/**
- 主视频回调
- */
-- (void)notifyMainVideo;
+- (void)stopScreenMarkRslt:(CRVIDEOSDK_ERR_DEF)sdkErr;
 
 /**********标注回调**********/
 - (void)notifyScreenMarkStarted;
@@ -1069,137 +1289,107 @@ CRVSDK_EXPORT
 - (void)delMarkData:(NSArray<NSString *> *)data operatorID:(NSString*)operatorID;
 
 
--(void)getSharerSrcPicRsp:(NSData*)picDat picSZ:(CGSize)picSZ;
+- (void)getSharerSrcPicRsp:(NSData*)picDat picSZ:(CGSize)picSZ;
 
 /* 网盘 */
--(void)getNetDiskFileListRslt:(NetDiskDocDir*)dirNode;
+- (void)getNetDiskFileListRslt:(NetDiskDocDir*)dirNode;
 
 //通知会议网盘上传下载进度
--(void)notifyNetDiskTransforProgress:(NSString*)fileID percent:(int)percent isUpload:(bool)isUpload;
+- (void)notifyNetDiskTransforProgress:(NSString*)fileID percent:(int)percent isUpload:(bool)isUpload;
 
 
-/* 白板 (king 20180716) */
-/**
- 通知之前已经创建好的白板
- @param boards 已经创建好的白板列表
- */
-- (void)notifyInitBoards:(NSArray<SubPageInfo *> *)boards;
-
-/**
- 通知之前已经创建好的白板上的图元数据
- @param boardID 白板子功能页ID
- @param boardPageNo 图元数据
- @param bkImgID 背景图片
- @param elements 图元信息列表
- @param operatorID 操作者
- */
-- (void)notifyInitBoardPageDat:(SubPage *)boardID boardPageNo:(int)boardPageNo bkImgID:(NSString *)bkImgID elements:(NSString *)elements operatorID:(NSString *)operatorID;
+// V2白板通知
 
 /**
  通知创建子功能页白板
  @param board 子功能页信息
  @param operatorID 操作者
  */
-- (void)notifyCreateBoard:(SubPageInfo *)board operatorID:(NSString *)operatorID;
+- (void)notifyCreateBoard:(BoardInfo *)board operatorID:(NSString *)operatorID;
 
 /**
  通知关闭白板
  @param boardID 白板子功能页ID
  @param operatorID 操作者
  */
-- (void)notifyCloseBoard:(SubPage *)boardID operatorID:(NSString *)operatorID;
+- (void)notifyCloseBoard:(BoardInfo *)board operatorID:(NSString *)operatorID;
 
-/**
- 通知添加图元信息
- @param boardID 白板子功能页ID
- @param boardPageNo 页码
- @param element 图元信息
- @param operatorID 操作者
- */
-- (void)notifyAddBoardElement:(SubPage *)boardID boardPageNo:(int)boardPageNo element:(NSString *)element operatorID:(NSString *)operatorID;
+/// 通知白板的扩展信息改变
+/// @param boardID 白板ID
+/// @param exInfo 扩展信息
+/// @param operatorID 操作者
+- (void)notifyBoardExInfoUpdated:(NSString *)boardID exInfo:(NSString *)exInfo operatorID:(NSString *)operatorID;
 
-/**
- 通知修改图元信息
- @param boardID 白板子功能页ID
- @param boardPageNo 页码
- @param element 图元信息
- @param operatorID 操作者
- */
-- (void)notifyModifyBoardElement:(SubPage *)boardID boardPageNo:(int)boardPageNo element:(NSString *)element operatorID:(NSString *)operatorID;
+/// 通知当前白板改变
+/// @param boardID 白板ID
+/// @param operatorID 操作者
+- (void)notifyCurrentBoard:(NSString *)boardID operatorID:(NSString *)operatorID;
 
-/**
- 通知删除图元
- @param boardID 白板子功能页ID
- @param boardPageNo 页码
- @param elementIDs 图元ID列表
- @param operatorID 操作者
- */
-- (void)notifyDelBoardElement:(SubPage *)boardID boardPageNo:(int)boardPageNo elementIDs:(NSArray<NSString *> *)elementIDs operatorID:(NSString *)operatorID;
+/// 通知白板列表
+/// @param boardIDList 白板ID列表
+- (void)notifyInitBoardList:(NSArray<NSString *> *)boardIDList;
 
-/**
- 通知设置鼠标热点消息
- @param boardID 白板子功能页ID
- @param boardPageNo 页码
- @param x 位置x
- @param y 位置y
- @param operatorID 操作者
- */
-- (void)notifyMouseHotSpot:(SubPage *)boardID boardPageNo:(int)boardPageNo x:(int)x y:(int)y operatorID:(NSString *)operatorID;
+- (void)setNickNameRsp:(CRVIDEOSDK_ERR_DEF)sdkErr userid:(NSString*)userid newName:(NSString*)newName;
 
--(void)notifyBoardCurPageNo:(SubPage *)boardID boardPageNo:(int)boardPageNo pos1:(int)pos1 pos2:(int)pos2 operatorID:(NSString*)operatorID;
-
--(void)notifySwitchToPage:(MainPageType)mainPage subPage:(SubPage*)sPage;
-
--(void)setNickNameRsp:(CRVIDEOSDK_ERR_DEF)sdkErr userid:(NSString*)userid newName:(NSString*)newName;
-
--(void)notifyNickNameChanged:(NSString*)userid oldName:(NSString*)oldName newName:(NSString*)newName;
-
-//通知查询文档列表结果
--(void)listNetDiskDocFileRslt:(NSString*)dir err:(CRVIDEOSDK_ERR_DEF)sdkErr rslt:(NetDiskDocDir*)rslt;
-
-//通知查询文档转换结果
--(void)getNetDiskDocFilePageInfoRslt:(NSString*)svrPathFileName err:(CRVIDEOSDK_ERR_DEF)sdkErr rslt:(GetDocPageInfoRslt*)rslt;
-
-//通知删除文档结果
--(void)deleteNetDiskDocFileRslt:(NSString*)svrPathFileName sdkERR:(int)sdkERR;
-
-//通知网盘文档传输进度
--(void)notifyNetDiskDocFilePageTransforProgress:(NSString*)svrPathFileName percent:(int)percent isUpload:(bool)isUpload;
+- (void)notifyNickNameChanged:(NSString*)userid oldName:(NSString*)oldName newName:(NSString*)newName;
 
 //会议属性  用户属性
--(void)getMeetingAllAttrsSuccess:(MeetingAttrs*)attrSeq cookie:(NSString *)cookie;
+- (void)getMeetingAllAttrsSuccess:(MeetingAttrs*)attrSeq cookie:(NSString *)cookie;
 
--(void)getMeetingAllAttrsFail:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)getMeetingAllAttrsFail:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)resetMeetingAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)getMeetingAttrsSuccess:(MeetingAttrs *)attrSeq cookie:(NSString *)cookie;
 
--(void)addOrUpdateMeetingAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)getMeetingAttrsFail:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)delMeetingAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)resetMeetingAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)clearMeetingAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)addOrUpdateMeetingAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)getUserAttrsSuccess:(UsrMeetingAttrs*)attrMap cookie:(NSString *)cookie;
+- (void)delMeetingAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)getUserAttrsFail:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)clearMeetingAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)setUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)getUserAttrsSuccess:(UsrMeetingAttrs*)attrMap cookie:(NSString *)cookie;
 
--(void)addOrUpdateUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)getUserAttrsFail:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)delUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)setUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)clearAllUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)addOrUpdateUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)clearUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+- (void)delUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)notifyMeetingAttrsChanged:(MeetingAttrs*)add updates:(MeetingAttrs*)updates delKeys:(NSMutableArray<NSString*>*)delKeys;
+- (void)clearAllUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
 
--(void)notifyUserAttrsChanged:(NSString*)uid adds:(MeetingAttrs*)adds updates:(MeetingAttrs*)updates delKeys:(NSMutableArray<NSString*>*)delKeys;
+- (void)clearUserAttrsRslt:(CRVIDEOSDK_ERR_DEF)sdkErr cookie:(NSString *)cookie;
+
+- (void)notifyMeetingAttrsChanged:(MeetingAttrs*)add updates:(MeetingAttrs*)updates delKeys:(NSMutableArray<NSString*>*)delKeys;
+
+- (void)notifyUserAttrsChanged:(NSString*)uid adds:(MeetingAttrs*)adds updates:(MeetingAttrs*)updates delKeys:(NSMutableArray<NSString*>*)delKeys;
 
 @end
 
+NS_ASSUME_NONNULL_END
+
+#pragma mark ----------------------------------------------- 音频数据回调
+NS_ASSUME_NONNULL_BEGIN
+@protocol CRAudioFrameCallBack <NSObject>
+@optional
+//采集的原始音频数据
+- (void)onRecordAudioFrame:(AudioFrame *)frm;
+//播放的原始音频数据
+- (void)onPlaybackAudioFrame:(AudioFrame *)frm;
+//用户的混音前原始音频数据
+- (void)onPlaybackAudioFrameBeforeMixing:(NSString *)userId frm:(AudioFrame *)frm;
+//采集+播放混音后数据
+- (void)onMixedAudioFrame:(AudioFrame *)frm;
+@end
+NS_ASSUME_NONNULL_END
+
 #pragma mark ----------------------------------------------- 视频会议类
+NS_ASSUME_NONNULL_BEGIN
+
 CRVSDK_EXPORT
 @interface CloudroomVideoMeeting : NSObject
 
@@ -1226,7 +1416,13 @@ CRVSDK_EXPORT
  移除回调
  @param callBack 多代理模式移除代理对象
  */
--(void) removeMeetingCallBack:(id<CloudroomVideoMeetingCallBack>)callBack;
+- (void)removeMeetingCallBack:(id<CloudroomVideoMeetingCallBack>)callBack;
+
+/**
+ 设置音频数据回调
+ @param callBack 代理对象，传入nil移除回调
+*/
+- (void)setAudioFrameObserver:(id<CRAudioFrameCallBack>)callback;
 
 #pragma mark ----------------------------------------------- 会议接口
 
@@ -1255,10 +1451,6 @@ CRVSDK_EXPORT
  */
 - (void)exitMeeting;
 
-// 锁门
-- (void)lockRoom:(bool)lock;
-- (bool)isRoomLocked;
-
 /**
  检查指定用户是否进入了会议
  @param userID 用户ID
@@ -1273,7 +1465,7 @@ CRVSDK_EXPORT
 - (NSString *)getMyUserID;
 
 
--(short)getMyTermID;
+- (short)getMyTermID;
 
 /**
  获取指定用户昵称
@@ -1295,20 +1487,26 @@ CRVSDK_EXPORT
  @param userId 用户ID
  @return 指定会议成员信息
  */
-- (MemberInfo *) getMemberInfo:(NSString *)userId;
+- (MemberInfo *)getMemberInfo:(NSString *)userId;
+
+/*
+ 请出会议
+ @param userid 用户ID
+*/
+- (void)kickout:(NSString *)userid;
 
 #pragma mark ----------------------------------------------- 音频接口
 /**
  麦克风设置
  */
--(void) setAudioCfg:(AudioCfg*)cfg;
+- (void)setAudioCfg:(AudioCfg*)cfg;
 
 /**
  获取麦克风设置
  
  @return 麦克风设置
  */
--(AudioCfg*) getAudioCfg;
+- (AudioCfg*) getAudioCfg;
 
 /**
  麦克风音量增益
@@ -1316,29 +1514,29 @@ CRVSDK_EXPORT
  @param scale  麦克风音量增益（范围：1-20）
  @return 是否成功
  */
--(bool)setMicVolumeScaling:(int)scale;
+- (bool)setMicVolumeScaling:(int)scale;
 
 /**
- 获取本地麦音量(level:0~100)
+ 获取本地麦音量(level:0~255)
  @return 本地麦音量
  */
 - (int)getMicVolume;
 
 /**
- 设置本地麦音量(level:0~100)
+ 设置本地麦音量(level:0~255)
  @param level 本地麦音量
  @return 设置是否成功
  */
 - (bool)setMicVolume:(int)level;
 
 /**
- 获取本地喇叭音量(level:0~100)
+ 获取本地喇叭音量(level:0~255)
  @return 本地喇叭音量
  */
 - (int)getSpeakerVolume;
 
 /**
- 设置本地喇叭音量(level:0~100)
+ 设置本地喇叭音量(level:0~255)
  @param level 本地喇叭音量
  @return 设置是否成功
  */
@@ -1360,7 +1558,7 @@ CRVSDK_EXPORT
 /**
  全体静音
  */
--(void)setAllAudioClose;
+- (void)setAllAudioClose;
 
 /**
  得到自已或对端的说话声音大小
@@ -1407,6 +1605,56 @@ CRVSDK_EXPORT
  */
 - (BOOL)getSpeakerMute;
 
+/**
+ 获取本地麦克风设备能量等级
+ @return 能量等级0~9, (9为最大能量等级）
+*/
+- (int)getLocMicDevEnergy;
+
+/**
+ 设置指定人变声
+ @param userID 用户ID
+ @param type 预定义变声类型
+*/
+- (void)setVoiceChange:(NSString *)userID type:(int)type;
+
+/**
+ 获取目标用户变声类型
+ @return 预定义变声类型
+*/
+- (int)getVoiceChangeType:(NSString *)userID;
+
+/**
+ 自定义音频采集
+ @param enable 是否启用自定义音频采集
+ @param param 可选扩展参数，json格式，当前支持参数：
+ "fromIPCam"：摄像头ID，配置后将不再需要pushCustomAudioDat，sdk自动从IPCam中获取音频数据
+ @return 错误码，CRVIDEOSDK_NOERR 代表调用成功
+*/
+- (CRVIDEOSDK_ERR_DEF)setCustomAudioCapture:(bool)enable param:(NSString *)param;
+
+/**
+ 向sdk送入自定义音频采集数据
+ @param pcmDat 音频帧数据
+ @return 错误码，CRVIDEOSDK_NOERR 代表调用成功
+*/
+- (CRVIDEOSDK_ERR_DEF)pushCustomAudioDat:(NSData *)pcmDat;
+
+/**
+ 自定义音频渲染
+ @param enable 是否开启自定义音频播放
+ @param param 保留参数
+ @return 错误码，CRVIDEOSDK_NOERR 代表调用成功
+*/
+- (CRVIDEOSDK_ERR_DEF)setCustomAudioPlayback:(bool)enable param:(NSString *)param;
+
+/**
+ 从sdk获取音频数据用于自渲染
+ @return pcmDat 音频帧数据
+*/
+- (NSData *)pullCustomAudioDat;
+
+
 // added by king 201710131139
 
 /**
@@ -1416,13 +1664,14 @@ CRVSDK_EXPORT
  */
 - (void)setPicResource:(NSString *)resID mediaDataFrame:(MediaDataFrame *)frame;
 
--(void) rmPicResource:(NSString *)resID;
+- (void)rmPicResource:(NSString *)resID;
 
 /**
  开始获取语音pcm数据
  @param aSide 声道类型 0:麦克风，1:扬声器
  @param getType 获取方式 0:回调方式，1:保存为文件
  @param param 当getType=0 表示回调方式，jsonParam可配置回调的数据大小(320-32000)，如: {"EachSize":320};当getType=1 表示保存为文件，jsonParam可配置文件名，如: { "FileName" ： "e:\test.pcm" }
+ @return 是否开启成功
  */
 - (BOOL)startGetAudioPCM:(int)aSide getType:(int)getType param:(NSString *)param;
 
@@ -1431,6 +1680,28 @@ CRVSDK_EXPORT
  @param aSide 声道类型 0:麦克风，1:扬声器
  */
 - (void)stopGetAudioPCM:(int)aSide;
+
+//设置音频订阅模式（可以在入会之前调用）
+- (void)setAudioSubscribeMode:(ASUBSCRIB_MODE)mode;
+
+//设置独立音频订阅列表，只对ASM_SEPARATE模式生效（可以在入会之前调用）
+- (void)setAudioSubscribeListForSeparateMode:(ASUBSCRIB_LISTTYPE)type userIds:(NSArray<NSString *> *)userIds;
+
+/**
+ 开始本地语音环回测试
+*/
+- (void)startEchoTest;
+
+/**
+ 停止本地语音环回测试
+*/
+- (void)stopEchoTest;
+
+/**
+ 检测是否在本地语音环回测试
+ @return 是否测试中
+*/
+- (bool)isEchoTesting;
 
 #pragma mark ----------------------------------------------- 视频接口
 /**
@@ -1447,9 +1718,9 @@ CRVSDK_EXPORT
  */
 - (VideoCfg *)getVideoCfg;
 
--(BOOL)setVideoEffects:(VideoEffects*)effects;
+- (BOOL)setVideoEffects:(VideoEffects*)effects;
 
--(VideoEffects*)getVideoEffects;
+- (VideoEffects*)getVideoEffects;
 
 /**
  获取指定用户视频状态
@@ -1486,6 +1757,15 @@ CRVSDK_EXPORT
  */
 - (VideoFrame *)getVideoImg:(UsrVideoId *)userID;
 
+/**
+ 获取自己或他人的图像数据
+ @param userID 用户ID
+ @param fmt 图像格式 -1时原用帧原始值
+ @param width 图像宽度 -1时原用帧原始值
+ @param height 图像高度 -1时原用帧原始值
+ @return 图像数据
+ */
+- (VideoFrame*)getVideoImg2:(UsrVideoId*)userID fmt:(VIDEO_FORMAT)fmt width:(int)width height:(int)height;
 
 /**
  设置/获取默认摄像头、多摄像头信息(自己videoIdList可以多个,远端只能一个)
@@ -1518,17 +1798,32 @@ CRVSDK_EXPORT
 - (NSMutableArray <UsrVideoId *> *)getWatchableVideos;
 
 //custom Cams
--(int) createCustomVideoDev:(NSString*)camName pixFmt:(VIDEO_FORMAT)pixFmt width:(int)width height:(int)height extParams:(NSString*)extParams;
+- (int)createCustomVideoDev:(NSString*)camName pixFmt:(VIDEO_FORMAT)pixFmt width:(int)width height:(int)height extParams:(NSString*)extParams;
 
--(void) destroyCustomVideoDev:(int)devID;
+- (void)destroyCustomVideoDev:(int)devID;
 
--(void) inputCustomVideoDat:(int)devID data:(NSData*)data timeStamp:(int)timeStamp;
+- (void)inputCustomVideoDat:(int)devID data:(NSData*)data timeStamp:(int)timeStamp;
 
--(int) createScreenCamDev:(NSString*)camName  monitor:(int)monitor;
+- (int)createScreenCamDev:(NSString*)camName  monitor:(NSString *)monitor;
 
--(bool) updateScreenCamDev:(int)devID tmonitor:(int)monitor;
+- (bool)updateScreenCamDev:(int)devID tmonitor:(NSString *)monitor;
 
--(void) destroyScreenCamDev:(int)devID;
+- (void)destroyScreenCamDev:(int)devID;
+
+// 获取摄像头流信息
+- (StreamInfo *)getVideoStreamInfo:(UsrVideoId *)cam;
+
+/*
+//美颜(初始化插件及资源）
+- (CRVIDEOSDK_ERR_DEF)startBeauty:(NSString *)initParams;
+- (BOOL)isBeautyStarted;
+//配置美颜效果
+- (CRVIDEOSDK_ERR_DEF)updateBeautyParams:(NSString *)params;
+- (NSString *)getBeautyParams;
+//停止美颜功能、释放美颜插件及资源
+- (void)stopBeauty;
+*/
+
 #pragma mark ----------------------------------------------- 屏幕共享接口
 /**
  屏幕共享是否已开始
@@ -1549,38 +1844,38 @@ CRVSDK_EXPORT
  */
 - (UIImage *)getShareScreenDecodeImg;
 
--(UIImage*)getSharerSrcPic;
+- (UIImage*)getSharerSrcPic;
 
 //设置屏幕共享参数
--(void) setScreenShareCfg:(ScreenShareCfg *)cfg;
+- (void)setScreenShareCfg:(ScreenShareCfg *)cfg;
 
 //获取屏幕共享的参数
--(ScreenShareCfg*) getScreenShareCfg;
+- (ScreenShareCfg*)getScreenShareCfg;
 
--(CGRect)getShareRect;
+- (CGRect)getShareRect;
 
 //发起屏幕共享
--(void) startScreenShare;
+- (void)startScreenShare;
 
 //停止取消屏幕共享
--(void) stopScreenShare;
+- (void)stopScreenShare;
 
--(void)startScreenMark;
+- (void)startScreenMark;
 
--(void)stopScreenMark;
+- (void)stopScreenMark;
 
 //赋予控制权限
--(void) giveCtrlRight:(NSString*)userId;
+- (void)giveCtrlRight:(NSString*)userId;
 //收回控制权限
--(void) releaseCtrlRight:(NSString*)userId;
+- (void)releaseCtrlRight:(NSString*)userId;
 
--(CGPoint)parseToScreenPoint:(CGPoint)point;
+- (CGPoint)parseToScreenPoint:(CGPoint)point;
 
--(void) setCustomizeCatchScreen:(BOOL)bCustomize;//设置是否自定义抓屏
+- (void)setCustomizeCatchScreen:(BOOL)bCustomize;//设置是否自定义抓屏
 
--(BOOL) isCustomizeCatchScreen;
+- (BOOL)isCustomizeCatchScreen;
 
--(void) setCustomizeScreenImg:(NSData*)yuvDat datLenght:(int)datLenght width:(int)width height:(int)height orientation:(YWOrientation)orientation;
+- (void)setCustomizeScreenImg:(NSData*)yuvDat datLenght:(int)datLenght width:(int)width height:(int)height orientation:(YWOrientation)orientation;
 
 #pragma mark ----------------------------------------------- IM接口
 
@@ -1630,79 +1925,45 @@ CRVSDK_EXPORT
 - (void)setRecordFileEncrypt:(BOOL)encrypt;
 
 
-/**
- 回放指定录制文件
- @param fileName 录制文件路径
- */
-- (void)playbackRecordFile:(NSString *)fileName;
-
 /**********录制新接口**********/
--(CRVIDEOSDK_ERR_DEF)createLocMixer:(NSString*)mixerID  cfg:(MixerCfg*)cfg content:(MixerContent*)content;
--(CRVIDEOSDK_ERR_DEF)updateLocMixerContent:(NSString*)mixerID content:(MixerContent*)content;
--(void)destroyLocMixer:(NSString*)mixerID;
--(MIXER_STATE)getLocMixerState:(NSString*)mixerID;
--(CRVIDEOSDK_ERR_DEF)addLocMixer:(NSString*)mixerID outputs:(MixerOutput*)outputs;
--(void)rmLocMixerOutput:(NSString*)mixerID  nameOrUrls:(NSArray<NSString*>*)nameOrUrls;
+- (CRVIDEOSDK_ERR_DEF)createLocMixer:(NSString*)mixerID  cfg:(MixerCfg*)cfg content:(MixerContent*)content;
+- (CRVIDEOSDK_ERR_DEF)updateLocMixerContent:(NSString*)mixerID content:(MixerContent*)content;
+- (void)destroyLocMixer:(NSString*)mixerID;
+- (MIXER_STATE)getLocMixerState:(NSString*)mixerID;
+- (CRVIDEOSDK_ERR_DEF)addLocMixer:(NSString*)mixerID outputs:(MixerOutput*)outputs;
+- (void)rmLocMixerOutput:(NSString*)mixerID  nameOrUrls:(NSArray<NSString*>*)nameOrUrls;
 
 //云端录制
--(CRVIDEOSDK_ERR_DEF)startSvrMixer:(NSMutableDictionary<NSString*,MixerCfg*>*)cfgs contents:(NSMutableDictionary<NSString*,MixerContent*>*)contents outputs:(NSMutableDictionary<NSString*,MixerOutput*>*)outputs;
--(CRVIDEOSDK_ERR_DEF)updateSvrMixerContent:(NSMutableDictionary<NSString*,MixerContent*>*)contents;
--(void)stopSvrMixer;
--(MIXER_STATE)getSvrMixerState;
+- (CRVIDEOSDK_ERR_DEF)startSvrMixer:(NSMutableDictionary<NSString*,MixerCfg*>*)cfgs contents:(NSMutableDictionary<NSString*,MixerContent*>*)contents outputs:(NSMutableDictionary<NSString*,MixerOutput*>*)outputs DEPRECATED_MSG_ATTRIBUTE("use createCloudMixer: instead");
+- (CRVIDEOSDK_ERR_DEF)updateSvrMixerContent:(NSMutableDictionary<NSString*,MixerContent*>*)contents DEPRECATED_MSG_ATTRIBUTE("use updateCloudMixerContent:cfg instead");
+- (void)stopSvrMixer DEPRECATED_MSG_ATTRIBUTE("use destroyCloudMixer: instead");
+- (MIXER_STATE)getSvrMixerState DEPRECATED_MSG_ATTRIBUTE("use getCloudMixerInfo: instead");
 
--(CRVIDEOSDK_ERR_DEF)startSvrMixerJson:(NSString*)cfgs contents:(NSString*)contents outputs:(NSString*)outputs;
--(CRVIDEOSDK_ERR_DEF)updateSvrMixerContentJson:(NSString*)contents;
+- (CRVIDEOSDK_ERR_DEF)startSvrMixerJson:(NSString*)cfgs contents:(NSString*)contents outputs:(NSString*)outputs DEPRECATED_MSG_ATTRIBUTE("use createCloudMixer: instead");
+- (CRVIDEOSDK_ERR_DEF)updateSvrMixerContentJson:(NSString*)contents DEPRECATED_MSG_ATTRIBUTE("use updateCloudMixerContent:cfg instead");
 
-//新云端录制接口
+/************ 新云端录制接口 ************/
+
+/// 创建云端录制
+/// - Parameter cfg: 服务器混图内容配置
 - (NSString *)createCloudMixer:(NSString *)cfg;
+
+/// 更新云端录制内容
+/// - Parameters:
+///   - mixerID: 创建云端录制所得的ID
+///   - cfg: 服务器混图内容配置
 - (CRVIDEOSDK_ERR_DEF)updateCloudMixerContent:(NSString *)mixerID cfg:(NSString *)cfg;
+
+/// 销毁指定云端录制
+/// - Parameter mixerID: 创建云端录制所得的ID
 - (void)destroyCloudMixer:(NSString *)mixerID;
+
+/// 查询指定云端录制的信息
+/// - Parameter mixerID: 创建云端录制所得的ID
 - (NSString *)getCloudMixerInfo:(NSString *)mixerID;
+
+/// 查询当前所有的云端录制信息
 - (NSString *)getAllCloudMixerInfo;
-
-/**********录制文件管理**********/
-
-/**
- 获取所有录制文件
- @return 所有录制文件列表
- */
-- (NSArray <RecFileShow *> *)getAllRecordFiles;
-
-/**
- 添加指定录制文件到录制管理
- @param fileName 录制文件名称
- @param filePath 录制文件路径
- @return 移除是否成功
- */
-- (int)addFileToRecordMgr:(NSString *)fileName filePath:(NSString *)filePath;
-
-/**
- 移除指定录制文件从录制管理
- @param fileName 录制文件路径
- @return 移除是否成功
- */
-- (int)removeFromFileMgr:(NSString *)fileName;
-
-
-/**
- 上传指定录制文件
- @param fileName 录制文件名称
- */
-- (void)uploadRecordFile:(NSString *)fileName;
-
-
-/**
- 上传指定录制文件
- @param fileName 录制文件名称
- @param svrPathFileName 服务器录制文件路径
- */
-- (void)uploadRecordFile:(NSString *)fileName svrPathFileName:(NSString *)svrPathFileName;
-
-/**
- 取消上传指定录制文件
- @param fileName 录制文件路径
- */
-- (void)cancelUploadRecordFile:(NSString *)fileName;
 
 
 #pragma mark ----------------------------------------------- 云端录制接口
@@ -1811,61 +2072,6 @@ CRVSDK_EXPORT
 - (void)setMediaVolume:(int)level;
 - (int)getMediaVolume;
 
-
-#pragma mark ----------------------------------------------- UI主调同步
-// added by king 20170803
-
-/**
- 设置视频墙分屏模式
- @param videoWallMode 分屏模式(0:互看 1:1分屏 2:2分屏 3:4分屏 4:5分屏 5:6分屏 6:9分屏 7:13分屏 8:16分屏)
- */
-- (void)setVideoWallMode:(int)videoWallMode;
-
-
-/**
- 获取视频墙分屏模式
- @return 分屏模式(0:互看 1:1分屏 2:2分屏 3:4分屏 4:5分屏 5:6分屏 6:9分屏 7:13分屏 8:16分屏)
- */
-- (int)getVideoWallMode;
-
-
-// added by king 20170810
-
-/**
- 设置主视频
- @param userID 用户ID
- */
-- (void)setMainVideo:(NSString *)userID;
-
-
-/**
- 获取主视频
- @return 用户ID
- */
-- (NSString *)getMainVideo;
-
-/**
- 功能切换
- 
- @param main 功能类型
- @param sub sub 子页面标识（如创建白板时返回的boardID）
- */
--(void)switchToPage:(MainPageType)main subPage:(SubPage*)sub;
-
-/**
- 获取当前主功能区
- 
- @return 当前主功能区
- */
-
--(MainPageType)getCurrentMainPage;
-/**
- 获取当前子页面
- 
- @return 当前子页面
- */
--(SubPage*)getCurrentSubPage;
-
 #pragma mark ----------------------------------------------- 标注
 /**
  屏幕共享是否允许其他人标注
@@ -1876,7 +2082,7 @@ CRVSDK_EXPORT
 /**
  允许他人标注屏幕
  */
--(void)enableOtherMark:(BOOL)enable;
+- (void)enableOtherMark:(BOOL)enable;
 
 /**
  屏幕共享是否开启标注
@@ -1898,129 +2104,87 @@ CRVSDK_EXPORT
 //扩展接口（带V4是一套接口。跟不带V4不互通）
 - (void)delMarkData:(NSArray<NSString *> *)data;
 
-/**
- 下载网盘文件
- */
--(void)downloadNetDiskFile:(NSString *)fileID localFilePath:(NSString *)localFilePath;
+#pragma mark - ----------------------------------------------- 白板
+/**********新白板接口**********/
 
-/* 白板 (king 20180716) */
 /**
  创建白板
- @param title  标题
- @param width 宽度
- @param height 高度
- @param pageCount 页数
- @return 白板所在的功能子页
+ @param w 白板宽
+ @param h 白板高
+ @param pageCount 白板页数
+ @param pageMode 连页（0） 单页（1）
+ @param exInfo 白板的扩展信息<=4KB
  */
-- (SubPage *)createBoard:(NSString *)title width:(int)width height:(int)height pageCount:(int)pageCount;
+- (void)createWhiteBoard:(int)w h:(int)h pageCount:(int)pageCount pageMode:(CLPageMode)pageMode exInfo:(NSString *)exInfo;
 
 /**
  关闭白板
- @param boardID 白板所在的功能子页
+ @param boardID 白板ID
  */
-- (void)closeBoard:(SubPage *)boardID;
-/**
- 初始化白板指定页数据
- @param boardID 白板所在的功能子页
- @param boardPageNo 页码（0:代表第一页）
- @param imgID 白板的背景图片标识（空代表无背影图）
- @param elements 白板的初始图元（空代表无图元，一般在导入历史文件才用到）
- */
-- (void)initBoardPageDat:(SubPage *)boardID boardPageNo:(int)boardPageNo imgID:(NSString *)imgID elemets:(NSString *)elements;
+- (void)closeBoard:(NSString *)boardID;
 
 /**
- 创建图元ID
- @return 图元ID
- */
-- (NSString *)createElementID;
+ 获取房间中的所有白板
+*/
+- (NSArray<NSString *> *)getAllBoard;
 
-/**
- 添加白板图元
- @param boardID 白板所在的功能子页
- @param boardPageNo 页码
- @param element 图元信息
- */
-- (void)addBoardElement:(SubPage *)boardID boardPageNo:(int)boardPageNo elementData:(NSString *)element;
+/// 更新白板的扩展信息
+/// @param boardID 白板ID
+/// @param exInfo 白板扩展信息
+- (void)updateBoardExInfo:(NSString *)boardID exInfo:(NSString *)exInfo;
 
-/**
- 修改白板图元
- @param boardID 白板所在的功能子页
- @param boardPageNo 页码
- @param element 图元信息
- */
-- (void)modifyBoardElement:(SubPage *)boardID boardPageNo:(int)boardPageNo elementData:(NSString *)element;
 
-/**
- 删除白板图元
- @param boardID 白板所在的功能子页
- @param boardPageNo 页码
- @param elementIDs 需要删除的图元ID列表
- */
-- (void)delBoardElement:(SubPage *)boardID boardPageNo:(int)boardPageNo elementIDs:(NSArray<NSString *> *)elementIDs;
+/// 获取白板信息
+/// @param boardID 白板ID
+- (BoardInfo *)getBoardInfo:(NSString *)boardID;
 
-/**
- 设置鼠标热点消息
- @param boardID 白板所在的功能子页
- @param boardPageNo 页码
- @param x x坐标
- @param y y坐标
- */
-- (void)setMouseHotSpot:(SubPage *)boardID boardPageNo:(int)boardPageNo x:(int)x y:(int)y;
+/// 获取当前board
+- (NSString *)getCurrentBoard;
 
-#pragma mark ----------------------------------------------- 网盘文档
-//查询文档列表
--(void)listNetDiskDocFile:(NSString*)dir;
-//上传文档并转换
--(void)uploadDocFileToNetDisk:(NSString*)svrPathFileName locPathFileName:(NSString*)locPathFileName;
-//下载源始文档
--(void)downloadNetDiskDocFile:(NSString*)svrPathFileName locPathFileName:(NSString*)locPathFileName;
-//取消文档传输
--(void)cancelTransforNetDiskDocFile:(NSString*)svrPathFileName;
-//删除文档
--(void)deleteNetDiskDocFile:(NSString*)svrPathFileName;
-//获取文档的转换信息
--(void)getNetDiskDocFilePageInfo:(NSString*)svrPathFileName;
-//下载文档转换后的页文件
--(void)downloadNetDiskDocFilePage:(NSString*)pagePathFileName locPathFileName:(NSString*)locPathFileName;
+/// 设置当前board
+/// @param boardID 白板ID
+- (void)setCurrentBoard:(NSString *)boardID;
 
 #pragma mark ----------------------------------------------- 指定视频设备参数控制disabled属性
--(void)setLocVideoAttributes:(int)videoID attributes:(CamAttribute*)attributes;
--(CamAttribute*)getLocVideoAttributes:(int)videoID;
+- (void)setLocVideoAttributes:(int)videoID attributes:(CamAttribute*)attributes;
+- (CamAttribute*)getLocVideoAttributes:(int)videoID;
 
 
 #pragma mark ----------------------------------------------- 会议属性 用户属性
 //会议属性
--(void)getMeetingAllAttrs:(NSString *)cookie;
+- (void)getMeetingAllAttrs:(NSString *)cookie;
 
--(void) getMeetingAttrs:(NSArray<NSString*> *) keys cookie:(NSString *)cookie;
+- (void)getMeetingAttrs:(NSArray<NSString *> *) keys cookie:(NSString *)cookie;
 //全部)重置
--(void) setMeetingAttrs:(NSMutableDictionary *)attrs options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
+- (void)setMeetingAttrs:(NSMutableDictionary *)attrs options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
 //添加)或更新
--(void) addOrUpdateMeetingAttrs:(NSMutableDictionary *)attrs options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
+- (void)addOrUpdateMeetingAttrs:(NSMutableDictionary *)attrs options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
 //删除
--(void) delMeetingAttrs:(NSArray<NSString*> *)keys options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
+- (void)delMeetingAttrs:(NSArray<NSString *> *)keys options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
 //清空)
--(void) clearMeetingAttrs:(NSString *)options cookie:(NSString *)cookie;
+- (void)clearMeetingAttrs:(NSMutableDictionary *)options cookie:(NSString *)cookie;
 
 //获取)指定用户的所有属性（一次最大只能获取50人的属性）
--(void) getUserAttrs:(NSArray<NSString*>*)uids keys:(NSArray<NSString*> *)keys  cookie:(NSString *)cookie;
+- (void)getUserAttrs:(NSArray<NSString *> *)uids keys:(NSArray<NSString *> *)keys cookie:(NSString *)cookie;
 //重置)指定用户的属性(用户之前的属性将被清空)
--(void) setUserAttrs:(MeetingAttrs*)uid attrs:(NSMutableDictionary *)attrs options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
+- (void)setUserAttrs:(NSString *)uid attrs:(NSMutableDictionary *)attrs options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
 //添加)或更新指定用户的属性
--(void) addOrUpdateUserAttrs:(NSString*)uid attrs:(NSMutableDictionary *)attrs options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
+- (void)addOrUpdateUserAttrs:(NSString *)uid attrs:(NSMutableDictionary *)attrs options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
 //删除)指定用户的属性
--(void) delUserAttrs:(NSString*)uid keys:(NSArray<NSString*>*)keys options:(NSMutableDictionary*)options cookie:(NSString*)cookie;
+- (void)delUserAttrs:(NSString *)uid keys:(NSArray<NSString *> *)keys options:(NSMutableDictionary *)options cookie:(NSString *)cookie;
 //清空)指定用户的属性
--(void) clearAllUserAttrs:(NSMutableDictionary*)options cookie:(NSString*)cookie;
--(void) clearUserAttrs:(NSString*)uID options:(NSString*)options cookie:(NSString*)cookie;
+- (void)clearAllUserAttrs:(NSMutableDictionary *)options cookie:(NSString *)cookie;
+- (void)clearUserAttrs:(NSString *)uID options:(NSString *)options cookie:(NSString *)cookie;
 
 
--(void)setVideoBlur:(BOOL)blur;
--(BOOL)getVideoBlur;
--(void)setVideoDressFrame:(UIImage*)image;
--(BOOL)hasStartDress;
+- (void)setVideoBlur:(BOOL)blur;
+- (BOOL)getVideoBlur;
+- (void)setVideoDressFrame:(UIImage *)image;
+- (BOOL)hasStartDress;
 
 @end
+
+NS_ASSUME_NONNULL_END
 
 #endif  // __CLOUDROOMVIDEO_MEETING_H__
 
