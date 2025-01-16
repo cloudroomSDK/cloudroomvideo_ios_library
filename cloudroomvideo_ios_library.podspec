@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |spec|
   spec.name         = "cloudroomvideo_ios_library"
-  spec.version      = "0.0.4"
+  spec.version      = "0.0.5"
   spec.summary      = "Native SDK for flutter iOS."
   spec.description  = <<-DESC
     Native SDK for flutter iOS. Since V4.3.28.
