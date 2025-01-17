@@ -1,17 +1,9 @@
-#
-#  Be sure to run `pod spec lint cloudroomvideo_ios_library.podspec' to ensure this is a
-#  valid spec and to remove all comments including this before submitting the spec.
-#
-#  To learn more about Podspec attributes see https://guides.cocoapods.org/syntax/podspec.html
-#  To see working Podspecs in the CocoaPods repo see https://github.com/CocoaPods/Specs/
-#
-
 Pod::Spec.new do |spec|
   spec.name         = "cloudroomvideo_ios_library"
-  spec.version      = "0.0.5"
+  spec.version      = "0.0.6"
   spec.summary      = "Native SDK for flutter iOS."
   spec.description  = <<-DESC
-    Native SDK for flutter iOS. Since V4.3.28.
+    Native SDK for flutter iOS. Since V4.5.1.
                    DESC
   spec.homepage     = "https://sdk.cloudroom.com"
   spec.license      = "MIT"
