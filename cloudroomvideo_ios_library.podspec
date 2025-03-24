@@ -11,7 +11,7 @@ Pod::Spec.new do |spec|
   spec.author             = { "Cloudroom" => "tom@cloudroom.com" }
   spec.platform     = :ios, "9.0"
   spec.source       = { :git => "https://github.com/cloudroomSDK/cloudroomvideo_ios_library.git", :tag => "#{spec.version}" }
-  spec.source_files  = "CloudroomVideoSDK_IOS/CloudroomVideoSDK_IOS.framework/Headers/*.{h,m}"
+  #spec.source_files  = "CloudroomVideoSDK_IOS/CloudroomVideoSDK_IOS.framework/Headers/*.{h,m}"
   spec.frameworks = "CoreServices", "Security", "AudioToolbox", "AVFoundation", "CoreMedia", "ExternalAccessory", "SystemConfiguration", "UIKit", "MobileCoreServices"
   spec.vendored_frameworks  = "CloudroomVideoSDK_IOS/CloudroomVideoSDK_IOS.xcframework"
   spec.libraries = "c++", "iconv", "bz2", "z"
