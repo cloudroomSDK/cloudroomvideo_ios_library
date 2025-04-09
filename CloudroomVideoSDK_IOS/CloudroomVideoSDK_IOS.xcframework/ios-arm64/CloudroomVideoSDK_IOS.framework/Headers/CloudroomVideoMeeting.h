@@ -1814,6 +1814,8 @@ CRVSDK_EXPORT
 // 获取摄像头流信息
 - (StreamInfo *)getVideoStreamInfo:(UsrVideoId *)cam;
 
+#pragma mark - 美颜
+
 //美颜(初始化插件及资源）
 - (CRVIDEOSDK_ERR_DEF)startBeauty:(NSString *)initParams;
 - (BOOL)isBeautyStarted;
@@ -1822,6 +1824,40 @@ CRVSDK_EXPORT
 - (NSString *)getBeautyParams;
 //停止美颜功能、释放美颜插件及资源
 - (void)stopBeauty;
+
+
+#pragma mark - 虚拟背景
+
+/**
+ 虚拟背景是否已开启
+ @return 是否已开启
+ */
+- (BOOL)isVirtualBackgroundStarted;
+
+/**
+ 开启虚拟背景
+ @param params 虚拟背景配置，json，详情见文档CRVirtualBkCfg
+ @return 错误码
+*/
+- (CRVIDEOSDK_ERR_DEF)startVirtualBackground:(NSString *)params;
+
+/**
+ 更新虚拟背景参数
+ @param params 虚拟背景配置，json，详情见文档CRVirtualBkCfg
+ @return 错误码
+*/
+- (CRVIDEOSDK_ERR_DEF)updateVirtualBackgroundParams:(NSString *)params;
+
+/**
+ 获取当前虚拟背景参数
+ @return 虚拟背景配置，json，详情见文档CRVirtualBkCfg
+*/
+- (NSString *)getVirtualBackgroundParams;
+
+/**
+ 停止虚拟背景
+*/
+- (void)stopVirtualBackground;
 
 #pragma mark ----------------------------------------------- 屏幕共享接口
 /**
